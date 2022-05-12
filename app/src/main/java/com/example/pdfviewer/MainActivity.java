@@ -61,7 +61,6 @@ public class MainActivity extends AppCompatActivity {
             if(resultData != null) {
                 uri = resultData.getData();
                 Intent intent = new Intent(this, DocumentActivity.class);
-                intent.setAction(Intent.ACTION_VIEW);
                 intent.setData(uri);
                 startActivity(intent);
 //                Doc doc = new Doc();

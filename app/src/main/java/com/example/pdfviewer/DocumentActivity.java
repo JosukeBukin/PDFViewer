@@ -22,15 +22,12 @@ public class DocumentActivity extends AppCompatActivity {
         PDFView pdfView = (PDFView) findViewById(R.id.documentView);
 
         Intent i = this.getIntent();
-        String path = i.getExtras().getString("PATH");
-        File file = new File(path);
-        if (file.canRead()) {
-            pdfView.fromFile(file).defaultPage(1).onLoad(new OnLoadCompleteListener() {
-                @Override
-                public void loadComplete(int nbPages) {
-                    Toast.makeText(DocumentActivity.this, String.valueOf(nbPages), Toast.LENGTH_SHORT).show();
-                }
-            }).load();
-        }
+        Uri uri = i.getData();
+        pdfView.fromUri(uri).defaultPage(1).onLoad(new OnLoadCompleteListener() {
+            @Override
+            public void loadComplete(int nbPages) {
+                Toast.makeText(DocumentActivity.this, String.valueOf(nbPages), Toast.LENGTH_LONG).show();
+            }
+        }).load();;
     }
 }
