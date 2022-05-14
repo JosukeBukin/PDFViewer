@@ -2,6 +2,7 @@ package com.example.pdfviewer;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -57,16 +58,16 @@ public class CustomAdapter extends BaseAdapter {
         view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                openPDFView(Doc.getPath());
+                openPDFView(Doc.getUri());
             }
         });
         return view;
     }
 
     //OPEN PDF VIEW
-    private void openPDFView(String path) {
-        Intent i=new Intent(c,DocumentActivity.class);
-        i.putExtra("PATH",path);
-        c.startActivity(i);
+    private void openPDFView(Uri uri) {
+        Intent intent = new Intent(c,DocumentActivity.class);
+        intent.setData(uri);
+        c.startActivity(intent);
     }
 }
