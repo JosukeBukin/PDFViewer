@@ -31,7 +31,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        ArrayList<Doc> recent = loadData();
+        // ArrayList<Doc> recent = loadData();
+        // EMPTY LIST
+        ArrayList<Doc> recent = new ArrayList<Doc>();
         final ListView lv = (ListView) findViewById(R.id.lv);
         lv.setAdapter(new CustomAdapter(MainActivity.this, recent));
 
