@@ -10,22 +10,20 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class CustomAdapter extends BaseAdapter {
 
     Context c;
-    ArrayList<Doc> Docs;
+    List<Doc> Docs;
 
-    public CustomAdapter(Context c, ArrayList<Doc> Docs) {
+    public CustomAdapter(Context c, List<Doc> Docs) {
         this.c = c;
         this.Docs = Docs;
     }
 
     @Override
-    public int getCount() {
-        return Docs.size();
-    }
+    public int getCount() { return Docs.size(); }
 
     @Override
     public Object getItem(int i) {
@@ -51,14 +49,14 @@ public class CustomAdapter extends BaseAdapter {
         ImageView img= (ImageView) view.findViewById(R.id.pdfImage);
 
         //BIND DATA
-        nameTxt.setText(Doc.getName());
+        nameTxt.setText(Doc.name);
         img.setImageResource(R.drawable.pdf_icon);
 
         //VIEW ITEM CLICK
         view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                openPDFView(Doc.getUri());
+                    openPDFView(Uri.parse(Doc.uri));
             }
         });
         return view;
@@ -68,6 +66,7 @@ public class CustomAdapter extends BaseAdapter {
     private void openPDFView(Uri uri) {
         Intent intent = new Intent(c,DocumentActivity.class);
         intent.setData(uri);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         c.startActivity(intent);
     }
 }

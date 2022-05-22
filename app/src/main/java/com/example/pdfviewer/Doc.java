@@ -2,25 +2,20 @@ package com.example.pdfviewer;
 
 import android.net.Uri;
 
-import java.io.File;
+import androidx.room.ColumnInfo;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
 
+@Entity
 public class Doc {
-    String name, path;
-    Uri uri;
-    public String getName() {
-        return name;
-    }
-    public String getPath() {
-        return path;
-    }
-    public Uri getUri() {return  uri;}
-    public void setName(String name) {
-        this.name = name;
-    }
-    public void setPath(String path) {
-        this.path = path;
-    }
-    public void setUri(Uri uri) {this.uri = uri;}
+    @PrimaryKey(autoGenerate = true)
+            public int uid;
+    @ColumnInfo(name = "file_name")
+            public String name;
+    @ColumnInfo(name = "file_path")
+            public String path;
+    @ColumnInfo(name = "file_uri")
+            public String uri;
 }
 
 

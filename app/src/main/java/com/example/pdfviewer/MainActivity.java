@@ -1,29 +1,32 @@
 package com.example.pdfviewer;
 
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ListView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.documentfile.provider.DocumentFile;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.gson.Gson;
+import com.google.firebase.crashlytics.buildtools.reloc.org.apache.commons.io.IOUtils;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity {
 
     public static final int PICK_PDF_FILE = 2;
-    private static final String SHARED_PREFERENCES_FILE_DOCUMENT_INFO = "documentInfoList";
-    private static final String SHARED_PREFERENCES_DOCUMENT_INFO = "Document_Info_List";
+    public static final int NUMBER_OF_THREADS = 4;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,12 +34,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        // ArrayList<Doc> recent = loadData();
-        // EMPTY LIST
-        ArrayList<Doc> recent = new ArrayList<Doc>();
+        List<Doc> recent = null;
+        recent = getInfo(MainActivity.this);
         final ListView lv = (ListView) findViewById(R.id.lv);
         lv.setAdapter(new CustomAdapter(MainActivity.this, recent));
-
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -51,7 +52,6 @@ public class MainActivity extends AppCompatActivity {
         safIntent.addCategory(Intent.CATEGORY_OPENABLE);
         safIntent.setType("application/pdf");
         startActivityForResult(safIntent, 2);
-
     }
     @Override
     public void onActivityResult( int requestCode, int resultCode, Intent resultData) {
@@ -62,40 +62,62 @@ public class MainActivity extends AppCompatActivity {
                 uri = resultData.getData();
                 Intent intent = new Intent(this, DocumentActivity.class);
                 intent.setData(uri);
-                // SAVE INFORMATION ABOUT FILE
+                final int takeFlags = intent.getFlags()
+                        & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                getContentResolver().takePersistableUriPermission(uri, takeFlags);
+
                 Doc doc = new Doc();
-                doc.setUri(uri);
+                doc.uri = uri.toString();
                 File file = new File(uri.getPath());
                 final String[] split = file.getPath().split(":");
                 file = new File(split[1]);
-                doc.setPath(file.getAbsolutePath());
-                doc.setName(file.getName());
-                // SAVE INFORMATION
-                saveData(doc);
+                doc.path = file.getAbsolutePath();
+                doc.name = file.getName();
+
+                doc.uri = makeLocalCopy(doc).toString();
+                saveInfo(doc, MainActivity.this);
+
                 // START ACTIVITY
                 startActivity(intent);
             }
         }
     }
-    private void saveData(Doc doc) {
-        Gson gson = new Gson();
-        String jsonInfo = gson.toJson(doc);
-
-        Context context = getApplicationContext();
-        SharedPreferences sharedPreferences = context.getSharedPreferences(SHARED_PREFERENCES_FILE_DOCUMENT_INFO, MODE_PRIVATE);
-        SharedPreferences.Editor editor = getPreferences(MODE_PRIVATE).edit();
-
-        editor.putString(SHARED_PREFERENCES_DOCUMENT_INFO, jsonInfo);
-        editor.commit();
+    // MAKE A LOCAL COPY OF DOCUMENT
+    private Uri makeLocalCopy(Doc doc) {
+        Uri result = null;
+        ContentResolver contentResolver = getContentResolver();
+        DocumentFile parent = DocumentFile.fromSingleUri(MainActivity.this, Uri.parse(doc.uri));
+        if(doc.name != null) {
+            try {
+                File f = File.createTempFile("cw_", ".pdf", getCacheDir());
+                InputStream in = contentResolver.openInputStream(parent.getUri());
+                FileOutputStream out = new FileOutputStream(f);
+                try {
+                    IOUtils.copy(in, out);
+                } finally {
+                    out.close();
+                    in.close();
+                }
+                result = Uri.fromFile(f);
+            } catch (Exception e) {
+                Log.e(getClass().getSimpleName(), "Exception copying to file", e);
+            }
+        }
+        return result;
     }
-    private ArrayList<Doc> loadData() {
-        Context context = getApplicationContext();
-
-        SharedPreferences sharedPreferences = context.getSharedPreferences(SHARED_PREFERENCES_FILE_DOCUMENT_INFO, MODE_PRIVATE);
-        String docInfoList = sharedPreferences.getString(SHARED_PREFERENCES_DOCUMENT_INFO, "");
-
-        Gson gson = new Gson();
-        ArrayList<Doc> Docs = gson.fromJson(docInfoList, ArrayList.class);
-        return Docs;
+    // SAVE INFORMATION ABOUT FILE
+    public void saveInfo(Doc doc, Context context) {
+        AppDatabase db = AppDatabase.getDatabase(context);
+        DocDao docDao = db.docDao();
+        if (docDao.findDocByPath(doc.uri) == null) {
+            docDao.insertAll(doc);
+        }
+    }
+    public List<Doc> getInfo(Context context) {
+        AppDatabase db = AppDatabase.getDatabase(context);
+        DocDao docDao = db.docDao();
+        List<Doc> recent = docDao.getAll();
+        return recent;
     }
 }
